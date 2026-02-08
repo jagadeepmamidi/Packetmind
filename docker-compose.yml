@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  # Development container with all tools
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: packetmind-dev
+    volumes:
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /workspace
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+
+  # Python analyzer service
+  analyzer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.analyzer
+    container_name: packetmind-analyzer
+    volumes:
+      - ./analyzer:/app
+      - ./data:/data
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Next.js dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: packetmind-dashboard
+    volumes:
+      - ./dashboard:/app
+      - /app/node_modules
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    command: npm run dev
+
+networks:
+  default:
+    name: packetmind-network

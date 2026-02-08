@@ -1,0 +1,51 @@
+# Development container with all tools for PacketMind
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Build essentials
+    build-essential \
+    git \
+    curl \
+    wget \
+    vim \
+    # Networking tools
+    tcpdump \
+    wireshark-common \
+    net-tools \
+    iputils-ping \
+    dnsutils \
+    # Packet capture libraries
+    libpcap-dev \
+    # Python
+    python3.11 \
+    python3-pip \
+    python3.11-venv \
+    # Go dependencies
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Go 1.21
+RUN wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.21.6.linux-amd64.tar.gz && \
+    rm go1.21.6.linux-amd64.tar.gz
+
+# Set up Go environment
+ENV PATH=$PATH:/usr/local/go/bin
+ENV GOPATH=/go
+ENV PATH=$PATH:$GOPATH/bin
+
+# Create workspace directory
+WORKDIR /workspace
+
+# Install Python packages
+COPY analyzer/requirements.txt /tmp/requirements.txt 2>/dev/null || echo "scapy\nfastapi\nuvicorn\nscikit-learn\nchromadb\nlangchain\nlangchain-google-genai\nlanggraph\npandas\nnumpy" > /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
+
+# Set up packet capture permissions
+RUN setcap cap_net_raw,cap_net_admin=eip /usr/bin/tcpdump || true
+
+# Default command
+CMD ["/bin/bash"]
