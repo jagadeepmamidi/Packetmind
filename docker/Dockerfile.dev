@@ -41,7 +41,12 @@ ENV PATH=$PATH:$GOPATH/bin
 WORKDIR /workspace
 
 # Install Python packages
-COPY analyzer/requirements.txt /tmp/requirements.txt 2>/dev/null || echo "scapy\nfastapi\nuvicorn\nscikit-learn\nchromadb\nlangchain\nlangchain-google-genai\nlanggraph\npandas\nnumpy" > /tmp/requirements.txt
+# Copy requirements if it exists, otherwise create a default one
+RUN if [ -f analyzer/requirements.txt ]; then \
+    cp analyzer/requirements.txt /tmp/requirements.txt; \
+    else \
+    echo "scapy\nfastapi\nuvicorn\nscikit-learn\nchromadb\nlangchain\nlangchain-google-genai\nlanggraph\npandas\nnumpy" > /tmp/requirements.txt; \
+    fi
 RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 # Set up packet capture permissions
